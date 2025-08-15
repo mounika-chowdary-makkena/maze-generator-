@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Maze Game (Python + DSA)</title>
+
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: url("/static/background.jpg") no-repeat center center fixed;
+        background-size: cover;
+        color: white;
+        text-align: center;
+    }
+
+    header {
+        background: rgba(0, 0, 0, 0.6);
+        padding: 15px;
+        border-radius: 10px;
+        display: inline-block;
+        margin: 20px auto;
+    }
+
+    h1 {
+        font-size: 2.2rem;
+        margin: 0;
+    }
+
+    p {
+        font-size: 1rem;
+        margin: 5px 0 0 0;
+    }
+
+    #timer {
+        font-size: 1.2rem;
+        background: yellow;
+        color: black;
+        padding: 5px 10px;
+        border-radius: 5px;
+        display: inline-block;
+        margin: 20px 0;
+    }
+
+    .game-container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 50px; /* more space between panel & maze */
+        flex-wrap: wrap;
+        margin-top: 30px;
+        margin-bottom: 30px;
+    }
+
+    .side-panel {
+        background: rgba(0, 0, 0, 0.7);
+        padding: 20px;
+        border-radius: 10px;
+        width: 220px;
+    }
+
+    .side-panel h2 {
+        font-size: 1.3rem;
+        margin-bottom: 10px;
+    }
+
+    .side-panel ul {
+        text-align: left;
+        padding-left: 20px;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    canvas {
+        border: 3px solid cyan;
+        background: black;
+    }
+
+    button {
+        background: cyan;
+        border: none;
+        padding: 10px 20px;
+        margin: 10px 5px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+    button:hover {
+        background: lime;
+    }
+
+    footer {
+        
+    background: linear-gradient(90deg, #000000, #000b17);
+    color: white;
+    padding: 20px 0;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
+    margin-top: 40px;
+    letter-spacing: 1px;
+    }
+
+
+    /* Responsive */
+    @media screen and (max-width: 768px) {
+        .game-container {
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .side-panel {
+            width: 90%;
+            text-align: center;
+        }
+        canvas {
+            width: 90%;
+            height: auto;
+        }
+    }
+</style>
+</head>
+
+<body>
+<header>
+    <h1>🌀 The Maze Challenge</h1>
+    <p>Test your brain! Reach the red exit as fast as possible.</p>
+</header>
+
+<div id="timer">Time: 0s</div>
+
+<div class="game-container">
+    <div class="side-panel">
+        <h2>How to Play:</h2>
+        <ul>
+            <li>Click "Generate Maze" to start</li>
+            <li>Use arrow keys to move</li>
+            <li>Reach the red square to win</li>
+            <li>Beat your fastest time!</li>
+        </ul>
+    </div>
+
+    <canvas id="mazeCanvas" width="600" height="600"></canvas>
+</div>
+
+<div>
+    <button onclick="loadMaze()">Generate Maze</button>
+    <button onclick="resetMaze()">Reset</button>
+</div>
+
+<footer>
+    © MAKKENA MOUNIKA CHOWDARY | All Rights Reserved
+</footer>
+
+
+<script>
+const canvas = document.getElementById("mazeCanvas");
+const ctx = canvas.getContext("2d");
+let mazeData = [];
+let player = { row: 1, col: 0 };
+let cellSize = 0;
+let timerInterval;
+let time = 0;
+
+function drawMaze(maze) {
+    mazeData = maze;
+    const rows = maze.length;
+    const cols = maze[0].length;
+    cellSize = canvas.width / cols;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (maze[r][c] === '#') ctx.fillStyle = "white";
+            else if (maze[r][c] === 'S') ctx.fillStyle = "lime";
+            else if (maze[r][c] === 'E') ctx.fillStyle = "red";
+            else ctx.fillStyle = "black";
+            ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+        }
+    }
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(player.col * cellSize, player.row * cellSize, cellSize, cellSize);
+}
+
+function loadMaze() {
+    fetch('/maze')
+        .then(res => res.json())
+        .then(data => {
+            player = { row: 1, col: 0 };
+            time = 0;
+            document.getElementById("timer").textContent = `Time: ${time}s`;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                time++;
+                document.getElementById("timer").textContent = `Time: ${time}s`;
+            }, 1000);
+            drawMaze(data);
+        });
+}
+
+function resetMaze() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    mazeData = [];
+    clearInterval(timerInterval);
+    time = 0;
+    document.getElementById("timer").textContent = `Time: 0s`;
+}
+
+function movePlayer(dr, dc) {
+    let newRow = player.row + dr;
+    let newCol = player.col + dc;
+    if (mazeData[newRow][newCol] !== '#') {
+        player.row = newRow;
+        player.col = newCol;
+        drawMaze(mazeData);
+        if (mazeData[newRow][newCol] === 'E') {
+            clearInterval(timerInterval);
+            setTimeout(() => alert(`🎉 You reached the end in ${time} seconds!`), 10);
+        }
+    }
+}
+
+document.addEventListener('keydown', function(event) {
+    if (!mazeData.length) return;
+    if (event.key === "ArrowUp") movePlayer(-1, 0);
+    if (event.key === "ArrowDown") movePlayer(1, 0);
+    if (event.key === "ArrowLeft") movePlayer(0, -1);
+    if (event.key === "ArrowRight") movePlayer(0, 1);
+});
+</script>
+</body>
+</html>
