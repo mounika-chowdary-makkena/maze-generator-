@@ -1,11 +1,14 @@
 from flask import Flask, render_template, jsonify, url_for
 import random
 
-app = Flask(__name__)
+# Explicitly tell Flask where static and template folders are
+app = Flask(__name__, static_folder='static', template_folder='templates')
 
 def generate_maze(rows=15, cols=20):
     H, W = 2 * rows + 1, 2 * cols + 1
     maze = [['#'] * W for _ in range(H)]
+    
+    # Create empty spaces
     for r in range(rows):
         for c in range(cols):
             maze[2 * r + 1][2 * c + 1] = ' '
@@ -21,8 +24,8 @@ def generate_maze(rows=15, cols=20):
 
     while stack:
         r, c = stack[-1]
-        neighbors = [(r+dr, c+dc) for dr, dc in dirs
-                     if 0 <= r+dr < rows and 0 <= c+dc < cols and (r+dr, c+dc) not in visited]
+        neighbors = [(r + dr, c + dc) for dr, dc in dirs
+                     if 0 <= r + dr < rows and 0 <= c + dc < cols and (r + dr, c + dc) not in visited]
         if neighbors:
             nr, nc = random.choice(neighbors)
             carve(r, c, nr, nc)
@@ -31,12 +34,13 @@ def generate_maze(rows=15, cols=20):
         else:
             stack.pop()
 
-    maze[1][0] = 'S'
-    maze[2 * rows - 1][2 * cols] = 'E'
+    maze[1][0] = 'S'  # Start
+    maze[2 * rows - 1][2 * cols] = 'E'  # End
     return maze
 
 @app.route("/")
 def index():
+    # Renders templates/index.html
     return render_template("index.html")
 
 @app.route("/maze")
@@ -45,4 +49,5 @@ def maze():
     return jsonify(maze_data)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Use 0.0.0.0 so it works on hosting too
+    app.run(host="0.0.0.0", port=5000, debug=True)
